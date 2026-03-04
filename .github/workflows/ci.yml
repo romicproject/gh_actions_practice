@@ -2,7 +2,12 @@ name: Node CI (learning)
 
 on:
   push:
+  pull_request:
   workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -23,8 +28,9 @@ jobs:
       - name: Prepare artifacts folder
         run: mkdir -p artifacts
 
-      - name: Run tests (capture output)
+      - name: Run tests (capture output, fail correctly)
         run: |
+          set -euo pipefail
           npm test 2>&1 | tee artifacts/test-output.txt
 
       - name: Create run info
@@ -41,6 +47,12 @@ jobs:
             echo "Node: $(node -v)"
             echo "NPM: $(npm -v)"
           } > artifacts/run-info.txt
+
+      # Exemplu de "report" (în proiecte reale aici ai playwright-report / junit.xml / allure-results etc.)
+      - name: Create a sample report file
+        if: always()
+        run: |
+          echo "<html><body><h1>Sample report</h1><p>Run $GITHUB_RUN_ID</p></body></html>" > artifacts/report.html
 
       - name: Upload artifacts
         if: always()
@@ -61,5 +73,10 @@ jobs:
             echo "- Node: \`$(node -v)\`"
             echo "- NPM: \`$(npm -v)\`"
             echo ""
-            echo "Artifacts uploaded: **run-artifacts** (includes \`run-info.txt\` and \`test-output.txt\`)"
+            echo "Artifacts uploaded: **run-artifacts**"
+            echo ""
+            echo "Included:"
+            echo "- \`run-info.txt\`"
+            echo "- \`test-output.txt\`"
+            echo "- \`report.html\` (sample)"
           } >> "$GITHUB_STEP_SUMMARY"
