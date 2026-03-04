@@ -1,13 +1,19 @@
-name: Hello CI
+name: Learning CI
 
 on:
-  push:
-  pull_request:
   workflow_dispatch:
+    inputs:
+      say:
+        description: "Text to print"
+        required: false
+        default: "Hello from manual run!"
 
 jobs:
-  hello:
+  basics:
     runs-on: ubuntu-latest
     steps:
-      - name: Print hello
-        run: echo "Hello from GitHub Actions!"
+      - name: Show event + input
+        run: |
+          echo "Event: $GITHUB_EVENT_NAME"
+          echo "Ref: $GITHUB_REF"
+          echo "Input say: ${{ inputs.say }}"
