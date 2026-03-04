@@ -2,11 +2,19 @@ name: Node CI (learning)
 
 on:
   push:
+  pull_request:
   workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [18, 20]
 
     steps:
       - uses: actions/checkout@v4
@@ -14,10 +22,10 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
-          
-      - name: Install (npm ci)
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Install
         run: npm ci
 
       - name: Run tests
@@ -35,5 +43,5 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: run-logs
+          name: run-logs-node-${{ matrix.node }}
           path: run.log
