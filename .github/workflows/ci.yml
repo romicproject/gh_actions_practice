@@ -22,3 +22,18 @@ jobs:
 
       - name: Run tests
         run: npm test
+
+      - name: Create a run log
+        if: always()
+        run: |
+          echo "Run: $GITHUB_RUN_ID" > run.log
+          echo "Commit: $GITHUB_SHA" >> run.log
+          node -v >> run.log
+          npm -v >> run.log
+
+      - name: Upload artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: run-logs
+          path: run.log
