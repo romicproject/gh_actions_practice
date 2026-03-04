@@ -2,19 +2,11 @@ name: Node CI (learning)
 
 on:
   push:
-  pull_request:
   workflow_dispatch:
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node: [18, 20]
 
     steps:
       - uses: actions/checkout@v4
@@ -22,26 +14,52 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node }}
+          node-version: 20
           cache: npm
 
       - name: Install
         run: npm ci
 
-      - name: Run tests
-        run: npm test
+      - name: Prepare artifacts folder
+        run: mkdir -p artifacts
 
-      - name: Create a run log
+      - name: Run tests (capture output)
+        run: |
+          npm test 2>&1 | tee artifacts/test-output.txt
+
+      - name: Create run info
         if: always()
         run: |
-          echo "Run: $GITHUB_RUN_ID" > run.log
-          echo "Commit: $GITHUB_SHA" >> run.log
-          node -v >> run.log
-          npm -v >> run.log
+          {
+            echo "Run: $GITHUB_RUN_ID"
+            echo "Workflow: $GITHUB_WORKFLOW"
+            echo "Job: $GITHUB_JOB"
+            echo "Repo: $GITHUB_REPOSITORY"
+            echo "Ref: $GITHUB_REF"
+            echo "SHA: $GITHUB_SHA"
+            echo ""
+            echo "Node: $(node -v)"
+            echo "NPM: $(npm -v)"
+          } > artifacts/run-info.txt
 
-      - name: Upload artifact
+      - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: run-logs-node-${{ matrix.node }}
-          path: run.log
+          name: run-artifacts
+          path: artifacts/
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "## CI summary"
+            echo ""
+            echo "- Repo: \`$GITHUB_REPOSITORY\`"
+            echo "- Ref: \`$GITHUB_REF\`"
+            echo "- SHA: \`$GITHUB_SHA\`"
+            echo "- Node: \`$(node -v)\`"
+            echo "- NPM: \`$(npm -v)\`"
+            echo ""
+            echo "Artifacts uploaded: **run-artifacts** (includes \`run-info.txt\` and \`test-output.txt\`)"
+          } >> "$GITHUB_STEP_SUMMARY"
