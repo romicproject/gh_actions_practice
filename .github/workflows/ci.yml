@@ -1,19 +1,24 @@
-name: Learning CI
+name: Node CI (learning)
 
 on:
+  push:
   workflow_dispatch:
-    inputs:
-      say:
-        description: "Text to print"
-        required: false
-        default: "Hello from manual run!"
 
 jobs:
-  basics:
+  test:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Show event + input
-        run: |
-          echo "Event: $GITHUB_EVENT_NAME"
-          echo "Ref: $GITHUB_REF"
-          echo "Input say: ${{ inputs.say }}"
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install (npm ci)
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
